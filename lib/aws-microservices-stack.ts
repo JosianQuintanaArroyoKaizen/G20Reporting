@@ -10,6 +10,10 @@ export class AwsMicroservicesStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
     super(scope, id, props);
 
+    // NOTE: This is a reference e-commerce stack from Udemy course
+    // It will be replaced with EMIR reporting infrastructure
+    // Current Lambda functions are simplified placeholders (no Docker bundling)
+    
     const database = new SwnDatabase(this, 'Database');    
 
     const microservices = new SwnMicroservices(this, 'Microservices', {
