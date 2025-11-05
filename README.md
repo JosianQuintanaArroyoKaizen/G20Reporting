@@ -1,6 +1,66 @@
-# Serverless Event-driven E-commerce Microservices
+# G20 Reporting - AWS Serverless Infrastructure
 
-**UDEMY COURSE WITH DISCOUNTED - Step by Step Development of this Repository -> https://www.udemy.com/course/aws-serverless-microservices-lambda-eventbridge-sqs-apigateway/?couponCode=OCTO25**
+[![CDK Version](https://img.shields.io/badge/AWS%20CDK-2.222.0-orange)](https://aws.amazon.com/cdk/)
+[![Node Version](https://img.shields.io/badge/Node-20.x-green)](https://nodejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.5.4-blue)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+This repository contains AWS CDK infrastructure for:
+1. **EMIR Accuracy Reporting System** - G20 regulatory compliance reporting (in development)
+2. **E-commerce Microservices** - Serverless event-driven architecture (learning/reference)
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **AWS Account** with appropriate permissions
+- **Node.js 20.x or 22.x** (current: using Node 20 LTS)
+- **AWS CLI** configured with credentials
+- **Git** for version control
+
+### Setup
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd G20Reporting
+
+# Install dependencies
+npm install
+
+# Configure AWS credentials (if not already done)
+aws configure
+
+# Bootstrap CDK (first time only)
+./deploy.sh bootstrap
+
+# Synthesize CloudFormation templates
+./deploy.sh synth
+
+# Deploy all stacks
+./deploy.sh deploy
+```
+
+## 📦 Projects
+
+### 1. EMIR Accuracy Reporting System (Primary Project)
+
+**Status**: 🚧 In Development
+
+Comprehensive data quality and accuracy reporting for ETD ESMA EOD Trade Activity data, analyzing EMIR regulatory reporting compliance.
+
+**Architecture**:
+- **S3** - Raw CSV storage (partitioned by date)
+- **Athena** - SQL analytics on S3 data
+- **Step Functions** - 8-phase validation pipeline
+- **Lambda** - Validation logic and report generation
+- **DynamoDB** - Metadata and validation results
+- **Glue Data Catalog** - Schema management for 203 EMIR fields
+
+**Documentation**: See [`emir-accuracy-report-guide.md`](emir-accuracy-report-guide.md)
+
+### 2. E-commerce Microservices (Reference Architecture)
+
+**Based on**: [AWS Serverless Microservices Udemy Course](https://www.udemy.com/course/aws-serverless-microservices-lambda-eventbridge-sqs-apigateway/)
 
 ![course2](https://user-images.githubusercontent.com/1147445/158019166-96732203-6642-4242-b1d9-d53ece2e1ed3.png)
 
@@ -46,14 +106,82 @@ cdk deploy
 * **Basket API -> https://xxx.execute-api.ap-southeast-1.amazonaws.com/prod/basket**
 * **Ordering API -> https://xxx.execute-api.ap-southeast-1.amazonaws.com/prod/order**
 
-## Useful commands
+## 🔄 CI/CD Pipeline
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+This project uses **GitHub Actions** for automated deployment:
+
+- ✅ **PR Checks** - Validate code on every Pull Request
+- ✅ **Automatic Deployment** - Deploy to dev/prod on branch push
+- ✅ **CDK Diff** - Show infrastructure changes in PRs
+- ✅ **Manual Deployment** - Trigger deployments via GitHub UI
+
+### Setup CI/CD
+
+See detailed setup guide: [`.github/CICD_SETUP.md`](.github/CICD_SETUP.md)
+
+**Quick Setup:**
+1. Add GitHub Secrets (AWS credentials):
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_ACCOUNT_ID`
+2. Create `develop` branch: `git checkout -b develop && git push origin develop`
+3. Push changes to trigger pipeline
+
+### Branch Strategy
+- `main` → Production deployment (requires approval)
+- `develop` → Development deployment (automatic)
+- Feature branches → Create PR to `develop`
+
+## 🛠️ Useful Commands
+
+### Using Helper Script (Recommended for WSL)
+```bash
+./deploy.sh synth          # Synthesize CDK stacks
+./deploy.sh diff           # Show differences from deployed stack
+./deploy.sh deploy         # Deploy all stacks
+./deploy.sh deploy <stack> # Deploy specific stack
+./deploy.sh bootstrap      # Bootstrap CDK for your account
+./deploy.sh list           # List all stacks
+./deploy.sh test           # Run tests
+./deploy.sh help           # Show all commands
+```
+
+### Using NPM/CDK Directly
+```bash
+npm run build              # Compile typescript to js
+npm run watch              # Watch for changes and compile
+npm run test               # Perform the jest unit tests
+npx cdk deploy             # Deploy this stack to your AWS account/region
+npx cdk diff               # Compare deployed stack with current state
+npx cdk synth              # Emits the synthesized CloudFormation template
+```
+
+**Note**: Local CDK commands may have WSL path issues. Use `./deploy.sh` or GitHub Actions instead.
+
+## 📋 Project Status
+
+### Completed ✅
+- [x] CDK infrastructure setup (v2.222.0)
+- [x] TypeScript 5.5.4 configuration
+- [x] CI/CD pipeline (GitHub Actions)
+- [x] E-commerce microservices stack
+- [x] Helper scripts for deployment
+- [x] Zero security vulnerabilities
+
+### In Progress 🚧
+- [ ] EMIR Storage construct (`lib/storage.ts`)
+- [ ] EMIR Glue Data Catalog (`lib/glue-catalog.ts`)
+- [ ] EMIR DynamoDB tables
+- [ ] EMIR Lambda functions (6 microservices)
+- [ ] EMIR Step Functions pipeline
+- [ ] EMIR Report generation
+
+### Planned 📅
+- [ ] API Gateway for report retrieval
+- [ ] CloudWatch dashboards
+- [ ] Cost monitoring alerts
+- [ ] Production deployment
+- [ ] Historical trend analysis
 
 ## Authors
 

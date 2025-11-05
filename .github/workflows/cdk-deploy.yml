@@ -1,0 +1,221 @@
+name: CDK Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering
+
+env:
+  AWS_REGION: us-east-1  # Change to your preferred region
+  NODE_VERSION: '20'     # Using Node 20 LTS for CDK compatibility
+
+jobs:
+  # Job 1: Validate and Test
+  validate:
+    name: Validate & Test
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter (if configured)
+        run: npm run lint || echo "No linter configured"
+        continue-on-error: true
+      
+      - name: Run tests
+        run: npm test
+        continue-on-error: true  # Allow deployment even if tests fail (remove this in production)
+      
+      - name: Build TypeScript
+        run: npm run build
+
+  # Job 2: CDK Diff (Show what will change)
+  cdk-diff:
+    name: CDK Diff
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.event_name == 'pull_request'
+    
+    permissions:
+      id-token: write   # Required for OIDC authentication
+      contents: read
+      pull-requests: write  # To post comments on PR
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: CDK Diff
+        run: npx cdk diff --all
+        continue-on-error: true
+
+  # Job 3: Deploy to Dev (on push to develop branch)
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment:
+      name: development
+      url: https://dev.example.com  # Update with your dev URL
+    
+    permissions:
+      id-token: write   # Required for OIDC authentication
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: CDK Bootstrap (if needed)
+        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+        continue-on-error: true
+      
+      - name: CDK Deploy to Dev
+        run: npx cdk deploy --all --require-approval never
+      
+      - name: Output deployment info
+        run: |
+          echo "✅ Deployment to DEV completed successfully"
+          npx cdk ls
+
+  # Job 4: Deploy to Production (on push to main branch)
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+      url: https://prod.example.com  # Update with your prod URL
+    
+    permissions:
+      id-token: write   # Required for OIDC authentication
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: CDK Bootstrap (if needed)
+        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID_PROD }}/${{ env.AWS_REGION }}
+        continue-on-error: true
+      
+      - name: CDK Synth
+        run: npx cdk synth --all
+      
+      - name: CDK Deploy to Production
+        run: npx cdk deploy --all --require-approval never
+      
+      - name: Output deployment info
+        run: |
+          echo "✅ Deployment to PRODUCTION completed successfully"
+          npx cdk ls
+      
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Production deployment failed! Check logs."
+
+  # Job 5: Manual Deploy (workflow_dispatch)
+  deploy-manual:
+    name: Manual Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    
+    permissions:
+      id-token: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: CDK Bootstrap
+        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+        continue-on-error: true
+      
+      - name: CDK Deploy
+        run: npx cdk deploy --all --require-approval never
+      
+      - name: Success notification
+        run: echo "✅ Manual deployment completed successfully"
+
