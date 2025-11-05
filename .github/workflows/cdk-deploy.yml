@@ -11,8 +11,9 @@ on:
   workflow_dispatch:  # Allows manual triggering
 
 env:
-  AWS_REGION: us-east-1  # Change to your preferred region
-  NODE_VERSION: '20'     # Using Node 20 LTS for CDK compatibility
+  AWS_REGION_ECOMMERCE: us-east-1    # E-commerce stack region
+  AWS_REGION_EMIR: eu-central-1      # EMIR stack region (Frankfurt)
+  NODE_VERSION: '20'                 # Using Node 20 LTS for CDK compatibility
 
 jobs:
   # Job 1: Validate and Test
@@ -74,7 +75,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION_EMIR }}  # Use EMIR region for bootstrapping
       
       - name: CDK Diff
         run: npx cdk diff --all
@@ -112,10 +113,14 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION_EMIR }}  # Use EMIR region for bootstrapping
       
-      - name: CDK Bootstrap (if needed)
-        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
+      - name: CDK Bootstrap us-east-1 (E-commerce)
+        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION_ECOMMERCE }}
+        continue-on-error: true
+      
+      - name: CDK Bootstrap eu-central-1 (EMIR)
+        run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION_EMIR }}
         continue-on-error: true
       
       - name: CDK Deploy to Dev
@@ -207,7 +212,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION_EMIR }}  # Use EMIR region for bootstrapping
       
       - name: CDK Bootstrap
         run: npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }}
