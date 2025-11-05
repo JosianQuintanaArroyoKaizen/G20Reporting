@@ -1,5 +1,5 @@
 import { RemovalPolicy, Duration } from 'aws-cdk-lib';
-import { Bucket, BucketEncryption, BlockPublicAccess, EventType, LifecycleRule } from 'aws-cdk-lib/aws-s3';
+import { Bucket, BucketEncryption, BlockPublicAccess, EventType, LifecycleRule, HttpMethods, StorageClass } from 'aws-cdk-lib/aws-s3';
 import { LambdaDestination } from 'aws-cdk-lib/aws-s3-notifications';
 import { Function as LambdaFunction } from 'aws-cdk-lib/aws-lambda';
 import { CfnWorkGroup } from 'aws-cdk-lib/aws-athena';
@@ -48,7 +48,7 @@ export class EmirStorage extends Construct {
       autoDeleteObjects: config.environment === 'dev',
       cors: [
         {
-          allowedMethods: ['GET'],
+          allowedMethods: [HttpMethods.GET],
           allowedOrigins: ['*'], // Restrict in production
           allowedHeaders: ['*'],
           maxAge: 3000,
@@ -108,7 +108,7 @@ export class EmirStorage extends Construct {
         enabled: true,
         transitions: [
           {
-            storageClass: 'GLACIER',
+            storageClass: StorageClass.GLACIER,
             transitionAfter: Duration.days(90),
           },
         ],
